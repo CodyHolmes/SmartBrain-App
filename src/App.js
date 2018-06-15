@@ -1,18 +1,82 @@
 import React, { Component } from 'react';
-import logo from './logo.svg';
+import Particles from 'react-particles-js';
+import Clarifai from 'clarifai';
 import './App.css';
+import Navigation from './components/Navigation/Navigation'
+import Logo from './components/Logo/Logo'
+import Rank from './components/Rank/Rank'
+import ImageLinkForm from './components/ImageLinkForm/ImageLinkForm'
+import FaceRecognition from './components/FaceRecognition/FaceRecognition'
+
+const app = new Clarifai.App({
+  apiKey: 'dccef808e55746b488ec335356515754'
+ });
+
+const particlesOptions = {
+  particles: {
+    number: {
+      value: 30,
+      density: {
+        enable: true,
+        value_area: 800
+      }
+    }
+  }
+}
 
 class App extends Component {
+  constructor(){
+    super();
+    this.state = {
+      input: '',
+      imageURL: '',
+      box: {}
+    }
+  }
+
+  calculateFaceLocation = (data) => {
+    const clarifaiFace = data.outputs[0].data.regions[0].region_info.bounding_box;
+    const image = document.getElementById('inputimage');
+    const width = Number(image.width);
+    const height = Number(image.height);
+    return {
+      leftCol: clarifaiFace.left_col * width,
+      topRow: clarifaiFace.top_row * height,
+      rightCol: width - (clarifaiFace.right_col * width),
+      bottomRow: height - (clarifaiFace.bottom_row * height)
+    }
+  }
+
+  displayFaceBox = (box) => {
+    this.setState({box: box});
+  }
+  onInputChange = (event) => {
+    this.setState({input: event.target.value});
+  }
+
+  onButtonSubmit = () => {
+    this.setState({imageURL: this.state.input})
+    app.models
+      .predict(
+        Clarifai.FACE_DETECT_MODEL,
+        this.state.input)
+      .then(response => this.displayFaceBox(this.calculateFaceLocation(response)))
+      .catch(err => console.log(err));
+  }
+
   render() {
     return (
       <div className="App">
-        <header className="App-header">
-          <img src={logo} className="App-logo" alt="logo" />
-          <h1 className="App-title">Welcome to React</h1>
-        </header>
-        <p className="App-intro">
-          To get started, edit <code>src/App.js</code> and save to reload.
-        </p>
+      <Particles className='particles'
+        params={particlesOptions}
+      />
+      <Navigation />
+      <Logo />
+      <Rank />
+      <ImageLinkForm
+        onInputChange={this.onInputChange}
+        onButtonSubmit={this.onButtonSubmit} />
+      <FaceRecognition box={this.state.box} imageURL={this.state.imageURL}/>
       </div>
     );
   }
