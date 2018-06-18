@@ -27,6 +27,10 @@ const particlesOptions = {
 }
 
 class App extends Component {
+  componentDidMount(){
+    document.title = "Smart Brain"
+  }
+
   constructor(){
     super();
     this.state = {
